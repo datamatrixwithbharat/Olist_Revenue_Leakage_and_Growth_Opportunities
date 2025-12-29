@@ -356,7 +356,67 @@ WHERE Order_estimated_delivery_date IS NULL
  -- Verifying changes
  DESCRIBE Orders;
  
+ -- Update Primary & Foreign keys
  
+ALTER TABLE Orders
+ADD CONSTRAINT
+FOREIGN KEY (customer_id)
+REFERENCES Customers(customer_id);
+ 
+ALTER TABLE Product_category_name_translation
+ADD PRIMARY KEY (product_category_name);
+
+ALTER TABLE Order_items
+ADD CONSTRAINT
+FOREIGN KEY (order_id)
+REFERENCES Orders(order_id),
+ADD CONSTRAINT 
+FOREIGN KEY (product_id)
+REFERENCES Products(product_id),
+ADD CONSTRAINT 
+FOREIGN KEY (seller_id)
+REFERENCES Sellers(seller_id);
+ 
+ ALTER TABLE order_payments
+ ADD CONSTRAINT
+ FOREIGN KEY (order_id)
+ REFERENCES Orders(order_id);
+ 
+-- *Revenue lost*
+-- 1. What is the percentage of revenue loss due to cancelled orders per year.
+-- Concidering delivered orders as generated revenue, cancelled & unavailable orders as lost revenue and others as processing but not added to revenue
+
+WITH generated_revenue AS (
+	SELECT 
+		ROUND(SUM(op.payment_value), 2) AS revenue_lost
+	FROM orders o
+	INNER JOIN order_payments op
+	ON op.order_id = o.order_id
+	WHERE o.order_status = 'unavailable'
+		OR o.order_status = 'canceled'		-- 269735.11
+), lost_revenue AS (
+	SELECT 
+		ROUND(SUM(op.payment_value), 2) AS revenue_generated
+	FROM orders o
+	INNER JOIN order_payments op
+	ON op.order_id = o.order_id
+	WHERE o.order_status = 'delivered'		-- 15422461.77
+)
+SELECT 
+	ROUND( ( revenue_lost / ( revenue_generated + revenue_lost ) ) * 100, 2) AS percentage_of_revenue_lost
+FROM generated_revenue g 
+JOIN
+lost_revenue l;		-- 1.72%(269735.11) Revenue lost due to cancelled & unavailable orders. not a threat as not less than 10%
+
+-- 2. What is the cancellation rate and total revenue lost per customer? order by cancellation rate high to low.
+
+
+    
+-- 3. What is the average cancellation rate of sellers and total revenue lost per seller? order by cancellation rate high to low.
+-- 4. How many orders are cancelled and revenue lost due to payment failure.
+-- 5. Total cancellations by reason.
+-- 6. What is the average time for cancellation from order date to cancellation date?
+-- 7. Revenue lost by cancellations before shipment Vs after shipment.
  
  
  

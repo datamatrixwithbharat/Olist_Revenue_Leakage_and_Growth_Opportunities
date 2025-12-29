@@ -11,7 +11,7 @@ This project analyzes revenue leakage and growth opportunities for olist.com a e
 
 *Revenue lost*
 1. What is the percentage of revenue loss due to cancelled orders per year.
-2. What is the average cancellation rate of customers and total revenue lost per customer? order by cancellation rate high to low.
+2. What is the cancellation rate and total revenue lost per customer? order by cancellation rate high to low.
 3. What is the average cancellation rate of sellers and total revenue lost per seller? order by cancellation rate high to low.
 4. How many orders are cancelled and revenue lost due to payment failure.
 5. Total cancellations by reason.
