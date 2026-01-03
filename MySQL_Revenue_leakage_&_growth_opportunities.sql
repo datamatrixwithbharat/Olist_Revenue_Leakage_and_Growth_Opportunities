@@ -632,7 +632,54 @@ ORDER BY average_delivery_duration DESC, cancellation_rate DESC;	/* Cities with 
 																	*/
 
 -- 8. Average delivery duration per seller.
+
+SELECT 
+	seller_id, 
+    ROUND( 
+		AVG(delivery_duration), 
+	2) AS avg_delivery_duration 
+FROM (
+	SELECT 
+		o.order_id,
+		i.seller_id, 
+		DATEDIFF(Order_delivered_customer_date, order_purchase_timestamp) AS delivery_duration 
+	FROM orders o 
+	LEFT JOIN order_items i 
+	ON i.order_id = o.order_id
+    ) AS temp_table
+GROUP BY seller_id
+ORDER BY avg_delivery_duration DESC;	/* Sellers with avg_delivery_duration greater than 7 days must be optimized
+											for improving orders and customer ratings. Not all at once but at 
+                                            different stages*/
+
 -- 9. Sellers contributing most to late deliveries. 
+ 
+ SELECT 
+	seller_id, 
+    COUNT(*) AS total_deliveries_delayed
+FROM (
+	SELECT 
+		o.order_id, 
+		i.seller_id, 
+		DATEDIFF(Order_estimated_delivery_date, order_purchase_timestamp) AS expected_delivery_duration, 
+		DATEDIFF(Order_delivered_customer_date, order_purchase_timestamp) AS delivery_duration
+	FROM orders o 
+	LEFT JOIN order_items i 
+	ON o.order_id = i.order_id
+	WHERE DATEDIFF(Order_delivered_customer_date, order_purchase_timestamp) > DATEDIFF(Order_estimated_delivery_date, order_purchase_timestamp)
+			AND order_status = 'delivered'
+) AS temp_table
+GROUP BY seller_id
+ORDER BY total_deliveries_delayed DESC;		/* High delivery delays indicates
+												1. Delayed seller response to received orders.
+                                                2. Inconsistency in logistic services. 
+											This can result in lower orders and loss of seller interest*/
+ 
+ 
+ 
+ 
+ 
+ 
  
  
  
