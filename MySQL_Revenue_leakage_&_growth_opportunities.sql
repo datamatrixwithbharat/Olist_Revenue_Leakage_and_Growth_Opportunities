@@ -676,10 +676,160 @@ ORDER BY total_deliveries_delayed DESC;		/* High delivery delays indicates
 											This can result in lower orders and loss of seller interest*/
  
  
+-- *Bad ratings*
+-- 1. What is the average rating for orders - delivered, cancelled by seller, cancelled by customer.
+
+SELECT 
+	ROUND( 
+		AVG(CASE WHEN order_status = 'delivered' THEN review_score END), 2
+	) AS rating_delivered, 
+    ROUND( 
+		AVG(CASE WHEN order_status = 'unavailable' THEN review_score END), 2
+	)AS rating_unavailable, 
+    ROUND( 
+		AVG(CASE WHEN order_status = 'canceled' THEN review_score END), 2
+	)AS rating_canceled 
+FROM orders o 
+INNER JOIN order_reviews r 
+ON o.order_id = r.order_id;		/* The average rating of delivered orders is 4.16, while 
+									rating of canceled orders is 1.81 and unavailable is 1.53. 
+                                    This indicates that the customer satisfaction is high when
+                                    a order is delivered. */
+
+-- 2. What is the average rating by seller?
+
+SELECT 
+	seller_id, 
+    AVG(review_score) AS rating
+FROM order_items i 
+LEFT JOIN order_reviews r 
+ON i.order_id = r.order_id
+GROUP BY seller_id
+ORDER BY rating ASC;	/* sellers with average rating below 3.5 should be reviewed for 
+							delayed deliveries and product unavailability. Such sellers 
+                            might contribute to revenue leakage. */
+
+-- 3. What is the average rating by product? 
+
+SELECT 
+	product_id, 
+	AVG(review_score) AS rating
+FROM order_items i
+LEFT JOIN order_reviews r
+ON i.order_id = r.order_id 
+GROUP BY product_id
+ORDER BY rating;		/* Products with average rating below 3.5 might lead to revenue leakage. 
+							Sellers with such products must be informed to improve average product rating. */
+
+-- 4. Average rating by delivery time buckets. (1-3 days, 4-7 days)
+
+WITH order_delivery_duration AS (
+	SELECT 
+		order_id, 
+        DATEDIFF(Order_delivered_customer_date, order_purchase_timestamp) AS delivery_duration
+	FROM orders 
+), 
+order_bucket AS (
+	SELECT 
+		order_id, 
+        CASE 
+			WHEN delivery_duration <= 3 THEN '1 - 3' 
+            WHEN delivery_duration <= 7 THEN '4 - 7'
+            ELSE '> 8'
+		END AS delivery_bucket
+	FROM order_delivery_duration
+) 
+SELECT 
+	delivery_bucket, 
+    ROUND( 
+		AVG(review_score), 2
+    )AS avg_rating
+FROM order_bucket b
+LEFT JOIN order_reviews r 
+ON b.order_id = r.order_id
+GROUP BY delivery_bucket;		/* orders delivered in 1-3 days have higher rating of 4.46, 
+									4-7 days have rating of 4.4
+                                    >8 days have rating of 3.94*/
+
+-- 5. Do sellers with more cancellations also have lower ratings?
+
+WITH temp_table AS (
+	SELECT 
+		i.order_id, 
+		seller_id, 
+		order_status, 
+		review_score
+	FROM order_items i 
+	LEFT JOIN orders o 
+	ON i.order_id = o.order_id 
+	INNER JOIN order_reviews r 
+	ON i.order_id = r.order_id
+), 
+seller_cancellations AS (
+	SELECT 
+		seller_id, 
+		COUNT(*) AS total_cancellations
+	FROM temp_table
+    WHERE order_status IN ('canceled', 'unavailable')
+	GROUP BY seller_id
+), 
+seller_rating AS (
+	SELECT 
+		seller_id, 
+		AVG(review_score) AS avg_rating
+	FROM temp_table
+	GROUP BY seller_id
+) 
+SELECT 
+	c.seller_id, 
+    total_cancellations, 
+    avg_rating
+FROM seller_cancellations c 
+INNER JOIN seller_rating r 
+ON c.seller_id = r.seller_id
+ORDER BY total_cancellations DESC;		/* Yes, sellers with high cancellations have high average rating */
+
+-- 6. Revenue from orders with below average rating.
+
+WITH orders_rating_revenue AS (
+	SELECT 
+		o.order_id, 
+		SUM(payment_value) AS payment_value,
+		AVG(review_score) AS rating
+	FROM orders o 
+	LEFT JOIN order_payments p 
+	ON o.order_id = p.order_id
+	LEFT JOIN order_reviews r 
+	ON o.order_id = r.order_id
+	GROUP BY o.order_id
+)
+SELECT 
+	ROUND(
+		SUM(payment_value), 2
+	) AS revenue_from_orders_with_below_avg_rating
+FROM orders_rating_revenue
+WHERE rating < ( SELECT 
+					AVG(rating) 
+				FROM orders_rating_revenue
+                )
+;			/*revenue from orders below average rating is 69,79,042.53(43%), while total revenue is 1,60,08,872.12. */
  
  
- 
- 
+-- **Growth opportunities**
+-- 1. What is the percentage of one time and repeating customers?
+
+SELECT 
+
+-- 2. What are the top 10 high selling products with low rating?
+-- 3. What is the revenue made from each category over time?
+-- 4. What is the total revenue, average revenue per seller and top 10 sellers by revenue?
+-- 5. Total orders of customers by delivery duration.
+-- 6. First-time vs returning customer revenue.
+-- 7. Repeat rate by signup month.
+-- 8. Total revenue per customer.
+-- 9. Top 10 customers by revenue.
+-- 10. % of revenue from top 10 sellers.
+-- 11. Revenue distribution across sellers.
  
  
  
