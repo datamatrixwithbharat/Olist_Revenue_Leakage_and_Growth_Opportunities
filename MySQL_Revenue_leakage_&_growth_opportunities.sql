@@ -818,14 +818,141 @@ WHERE rating < ( SELECT
 -- **Growth opportunities**
 -- 1. What is the percentage of one time and repeating customers?
 
+WITH customer_orders AS (
+	SELECT 
+	customer_unique_id, 
+	COUNT(*) AS total_orders
+	FROM (
+		SELECT 
+			o.order_id, 
+			c.customer_id, 
+			c.customer_unique_id 
+		FROM orders o 
+		LEFT JOIN customers c 
+		ON o.customer_id = c.customer_id
+		) AS temp_table
+	GROUP BY customer_unique_id
+) 
 SELECT 
+	ROUND(
+		COUNT(CASE WHEN total_orders = 1 THEN 1 END) / (COUNT(*)) * 100
+    , 2) AS percentage_of_one_time_customers
+FROM customer_orders;		/* 96.88% of the customers are one time buyers.
+								100-96.88 = 3.12% are repeating. 
+                                This indicates that the customer repeat rate is very low. A survey 
+                                with repeating & one time customers would help business to understand the 
+                                needs of the customers.*/
 
 -- 2. What are the top 10 high selling products with low rating?
+
+SELECT 
+	product_id, 
+    COUNT(*) AS total_orders, 
+    AVG(review_score) AS avg_rating 
+FROM (
+	SELECT 
+		i.order_id, 
+		i.product_id, 
+		r.review_score 
+	FROM order_items i 
+	RIGHT JOIN order_reviews r 
+	ON r.order_id = i.order_id
+    ) AS temp_table
+GROUP BY product_id
+ORDER BY avg_rating, total_orders DESC
+LIMIT 10;		/* We have top 10 selling products with low rating */
+
 -- 3. What is the revenue made from each category over time?
+
+SELECT 
+	product_category_name_english, 
+    ROUND(SUM(price), 2) AS revenue_generated_over_time 
+FROM (
+	SELECT 
+		i.order_id, 
+		i.product_id,  
+		ROUND(Price + Freight_value, 2) AS price, 
+		p.product_category_name
+	FROM order_items i 
+	LEFT JOIN products p 
+	ON i.product_id = p.product_id) AS m
+INNER JOIN product_category_name_translation t 
+ON t.product_category_name = m.product_category_name
+GROUP BY t.product_category_name
+ORDER BY revenue_generated_over_time DESC;		/* health_beauty category has generated the highest revenue over time followed
+													by watches_gifts, bed_bath_table, etc., */
+
 -- 4. What is the total revenue, average revenue per seller and top 10 sellers by revenue?
--- 5. Total orders of customers by delivery duration.
+
+SELECT 
+	seller_id, 
+    ROUND(
+		SUM(price + freight_value)
+    , 2) AS revenue, 
+    ROUND(
+		AVG(price + freight_value)
+    , 2) AS average_revenue
+FROM order_items
+GROUP BY seller_id
+ORDER BY revenue DESC
+LIMIT 10;		/* We have top 10 sellers by revenue and average sales as average_revenue */
+
+-- 5. Total orders of customers by delivery duration. 
+
+SELECT 
+	customer_unique_id, 
+    delivery_duration, 
+    COUNT(*) AS total_orders
+FROM (
+	SELECT 
+		customer_id, 
+		DATEDIFF(Order_delivered_customer_date, order_purchase_timestamp) AS delivery_duration
+	FROM orders
+	WHERE order_status = 'delivered'
+    ) AS t 
+LEFT JOIN customers c 
+ON t.customer_id = c.customer_id
+GROUP BY customer_unique_id, delivery_duration
+ORDER BY customer_unique_id;			/* Since most of the customers are one time buyers, 
+											this query is not supportive for analysis */
+
 -- 6. First-time vs returning customer revenue.
--- 7. Repeat rate by signup month.
+
+WITH customer_orders AS (
+	SELECT 
+		o.order_id, 
+		SUM(p.payment_value) AS price, 
+		o.customer_id, 
+		c.customer_unique_id 
+	FROM orders o 
+	RIGHT JOIN order_payments p 
+	ON o.order_id = p.order_id
+	LEFT JOIN customers c 
+	ON o.customer_id = c.customer_id 
+	GROUP BY o.order_id
+), 
+customer_revenue AS (
+	SELECT 
+		customer_unique_id, 
+        COUNT(*) AS total_orders, 
+        SUM(price) AS revenue
+	FROM customer_orders
+    GROUP BY customer_unique_id
+)
+SELECT 
+	ROUND( 
+		SUM(CASE WHEN total_orders = 1 THEN revenue END) 
+	, 2) AS one_time_customers_revenue, 
+    ROUND( 
+		SUM(CASE WHEN total_orders != 1 THEN revenue END) 
+	, 2) AS repeating_customers_revenue 
+FROM customer_revenue;		/* one time customers revenue = 15064849.41. 
+								repeating customers revenue = 944022.71*/
+
+-- 7. Repeat rate by signup month. 
+
+
+
 -- 8. Total revenue per customer.
 -- 9. Top 10 customers by revenue.
 -- 10. % of revenue from top 10 sellers.
