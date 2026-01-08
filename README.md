@@ -1,12 +1,16 @@
-# Olist_Revenue_Leakage_and_Growth_Opportunities
-Analysis of revenue leakage and growth opportunities of Olist with data from 2016 to 2018 using MySQL and PowerBI
+**Project Title:**
+Olist_Revenue_Leakage_and_Growth_Opportunities
 
-dataset from kaggle: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
-
-SQL questions - Revenue lekage ang growth opportunities
-
+**Objective:**
 This project analyzes revenue leakage and growth opportunities for olist.com a e-commerce enabler platform, using SQL. The analysis focuses on cancellations, delivery performance, customer behavior, seller performance, product quality, and revenue concentration to identify operational inefficiencies and areas for growth.
 
+**Tools Used:**
+MySQL, SQL (CTEs, Joins, Aggregations), Power BI (optional)
+
+**Dataset:**
+Olist Brazilian E-commerce Dataset -  https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+
+**SQL queries**
 **Revenue Lekage**
 
 *Revenue lost*
@@ -53,3 +57,14 @@ This project analyzes revenue leakage and growth opportunities for olist.com a e
 *Product performance metrics*
 1. High revenue + low rating
 2. Low revenue + high rating (hidden gems)
+
+
+**POWERBI**
+
+Revenue loss trend by year
+
+Cancellation rate vs delivery time
+
+Seller revenue concentration
+
+One-time vs repeat customer revenue
