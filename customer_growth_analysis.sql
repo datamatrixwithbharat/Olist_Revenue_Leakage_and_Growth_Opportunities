@@ -135,7 +135,7 @@ WHERE rating < ( SELECT
 					AVG(rating) 
 				FROM orders_rating_revenue
                 )
-;			/*revenue from orders below average rating is 69,79,042.53(43%), while total revenue is 1,60,08,872.12. */
+;			/* revenue from orders below average rating is 69,79,042.53(43%), while total revenue is 1,60,08,872.12. */
  
  
 -- **Growth opportunities**
