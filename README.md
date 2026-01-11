@@ -59,12 +59,9 @@ Olist Brazilian E-commerce Dataset -  https://www.kaggle.com/datasets/olistbr/br
 2. Low revenue + high rating (hidden gems)
 
 
-**POWERBI**
+**PowerBI visuals**
 
-Revenue loss trend by year
-
-Cancellation rate vs delivery time
-
-Seller revenue concentration
-
-One-time vs repeat customer revenue
+1. Revenue loss trend by year
+2. Cancellation rate vs delivery time
+3. Seller revenue concentration
+4. One-time vs repeat customer revenue
